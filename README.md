@@ -4,6 +4,8 @@ pxpipe-app 是 pxpipe proxy 的桌面控制台。它使用 Electron、React 和 
 
 pxpipe 的核心能力是把大段输入上下文渲染成紧凑的 PNG 图片，从而减少模型请求中的输入 token。pxpipe-app 不替代核心代理，而是提供一个更容易操作和观察的桌面界面。
 
+![pxpipe-app 界面截图](./image.png)
+
 ## 功能概览
 
 - **代理控制**：启动、停止本地 pxpipe proxy，查看当前监听地址。
@@ -265,8 +267,6 @@ pxpipe-app 是桌面控制台，核心压缩逻辑来自上游项目 pxpipe / `p
 ```
 
 上游项目主页：<https://github.com/teamchong/pxpipe>。
-
-MIT License 不强制 README 必须“关联”某个项目，但如果分发内容包含或基于上游 `pxpipe` 的代码、二进制或打包产物，应保留上游项目的版权声明和 MIT License 文本。由于 pxpipe-app 依赖并打包使用 `pxpipe-proxy`，README 中保留上游项目归属说明，有助于满足许可证保留要求，也能让用户明确桌面 App 与核心代理的关系。
 
 ## 许可
 

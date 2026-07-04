@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 *.log
+out/
 # pnpm is the package manager — npm's lockfile is not the source of truth
 package-lock.json
 
