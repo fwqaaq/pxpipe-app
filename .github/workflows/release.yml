@@ -49,7 +49,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: pxpipe-app/pnpm-lock.yaml
+          cache-dependency-path: |
+            pxpipe-app/pnpm-lock.yaml
+            pxpipe/pnpm-lock.yaml
 
       - name: Install Linux packaging dependencies
         if: runner.os == 'Linux'
@@ -57,7 +59,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libarchive-tools rpm
 
-      - name: Install dependencies
+      - name: Install pxpipe proxy dependencies
+        working-directory: pxpipe
+        run: pnpm install --frozen-lockfile
+
+      - name: Install pxpipe-app dependencies
         working-directory: pxpipe-app
         run: pnpm install --frozen-lockfile
 

@@ -26,6 +26,7 @@ import type {
   CompressionToggleResult,
   CurrentSessionPayload,
   DashboardRecentPayload,
+  DashboardRecentRow,
   ImageSourcePayload,
   ImageVsTextBreakdownPayload,
   PersistedEvent,
@@ -76,12 +77,6 @@ async function dispatchDashboard(
       const idRaw = url.searchParams.get('id')
       const idNum = idRaw != null ? Number(idRaw) : NaN
       return dashboard.serveImageSource(Number.isFinite(idNum) ? idNum : undefined)
-    }
-    case 'api-image-vs-text-breakdown': {
-      if (method !== 'GET') return undefined
-      const idRaw = url.searchParams.get('id')
-      const idNum = idRaw != null ? Number(idRaw) : NaN
-      return dashboard.serveImageVsTextBreakdown(Number.isFinite(idNum) ? idNum : undefined)
     }
     case 'api-sessions':
       if (method !== 'GET') return undefined
@@ -214,6 +209,81 @@ async function writeWebResponse(res: Response, out: ServerResponse): Promise<voi
     out.end()
   } finally {
     reader.releaseLock()
+  }
+}
+
+function imageIdsForRow(row: DashboardRecentRow): number[] {
+  if (row.img_ids && row.img_ids.length > 0) return row.img_ids
+  return row.img_id == null ? [] : [row.img_id]
+}
+
+function weightedActualInput(row: DashboardRecentRow): number {
+  if (row.actual_input != null) return row.actual_input
+  return (row.input_tokens ?? 0) + (row.cache_create ?? 0) * 1.25 + (row.cache_read ?? 0) * 0.1
+}
+
+function buildImageVsTextBreakdown(
+  payload: DashboardRecentPayload,
+  id?: number
+): ImageVsTextBreakdownPayload {
+  const residentImageIds = new Set(payload.image_ids ?? [])
+  const recentWithImages = payload.recent.filter((row) => imageIdsForRow(row).length > 0)
+  const row =
+    id == null
+      ? recentWithImages.at(-1)
+      : recentWithImages.find((candidate) => imageIdsForRow(candidate).includes(id))
+
+  if (!row) {
+    return {
+      id,
+      latest: id == null,
+      error: 'no image-vs-text breakdown yet',
+      hint: 'Start proxy and send a request that pxpipe compresses.'
+    }
+  }
+
+  const rowImageIds = imageIdsForRow(row)
+  const selectedId = id ?? rowImageIds[0]
+  const actualInput = weightedActualInput(row)
+  const baselineInput = row.baseline_input ?? null
+  const saved = baselineInput == null ? null : baselineInput - actualInput
+  const savedPct = baselineInput && saved != null ? (saved / baselineInput) * 100 : null
+
+  return {
+    id: selectedId,
+    latest: id == null,
+    provider: 'openai-compatible',
+    path: row.path,
+    model: row.model ?? null,
+    compressed: row.compressed,
+    restored: true,
+    comparison: {
+      have_baseline: baselineInput != null,
+      baseline_input_weighted: baselineInput,
+      actual_input_weighted: actualInput,
+      saved_input_weighted: saved,
+      saved_pct: savedPct,
+      baseline_tokens_raw: Math.round(baselineInput ?? 0),
+      actual_tokens_raw: Math.round(row.input_tokens ?? actualInput),
+      cache_read_tokens: row.cache_read ?? 0,
+      text_cache_warm: (row.cache_read ?? 0) > 0,
+      output_tokens_untouched: row.output_tokens ?? 0
+    },
+    became_images: {
+      image_count: rowImageIds.length,
+      bucket_chars: {},
+      images: rowImageIds.map((imageId) => ({
+        id: imageId,
+        available: residentImageIds.has(imageId),
+        png_url: `/proxy-latest-png?id=${imageId}`,
+        source_url: `/api/image-source?id=${imageId}`
+      }))
+    },
+    stayed_text: {
+      latest_messages: 'verbatim',
+      output: 'verbatim',
+      note: 'Model output and recent chat tail stay as text; pxpipe only turns large context blocks into token images.'
+    }
   }
 }
 
@@ -368,12 +438,14 @@ export class ProxyService {
   async getImageVsTextBreakdown(id?: number): Promise<ImageVsTextBreakdownPayload> {
     if (!this.dashboard) {
       return {
+        id,
+        latest: id == null,
         error: 'no image-vs-text breakdown yet',
         hint: 'Start proxy and send a request that pxpipe compresses.'
       }
     }
-    const res = this.dashboard.serveImageVsTextBreakdown(id)
-    return (await res.json()) as ImageVsTextBreakdownPayload
+    const recent = (await this.dashboard.serveRecent().json()) as DashboardRecentPayload
+    return buildImageVsTextBreakdown(recent, id)
   }
 
   async getTokenImage(id?: number): Promise<TokenImagePayload> {
