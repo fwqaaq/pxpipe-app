@@ -71,8 +71,43 @@ jobs:
         working-directory: pxpipe-app
         run: pnpm install --frozen-lockfile
 
+      - name: Check macOS signing secrets
+        if: matrix.name == 'macOS'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        shell: bash
+        run: |
+          if [[ -z "$CSC_LINK" || -z "$CSC_KEY_PASSWORD" ]]; then
+            echo "Missing CSC_LINK or CSC_KEY_PASSWORD for Developer ID signing." >&2
+            exit 1
+          fi
+          if [[ -n "$APPLE_API_KEY" && -n "$APPLE_API_KEY_ID" && -n "$APPLE_API_ISSUER" ]]; then
+            exit 0
+          fi
+          if [[ -n "$APPLE_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
+            exit 0
+          fi
+          echo "Missing notarization credentials. Provide APPLE_API_KEY/APPLE_API_KEY_ID/APPLE_API_ISSUER or APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID." >&2
+          exit 1
+
       - name: Build
         working-directory: pxpipe-app
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: pnpm run ${{ matrix.build_script }}
 
       - name: Upload packaged assets

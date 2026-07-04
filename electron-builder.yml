@@ -14,21 +14,28 @@ asarUnpack:
   - node_modules/better-sqlite3/**
 win:
   executableName: pxpipe
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  entitlementsInherit: build/entitlements.mac.plist
-  identity: null
-  notarize: false
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
+  icon: build/icon.icns
 linux:
   target:
     - AppImage
     - deb
+  icon: build/icons
   maintainer: pxpipe
   category: Utility
 appImage:
