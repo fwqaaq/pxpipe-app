@@ -1,6 +1,6 @@
 {
   "name": "pxpipe-app",
-  "version": "1.0.0",
+  "version": "0.8.0",
   "description": "Cross-platform desktop control panel for pxpipe proxy",
   "main": "./out/main/index.js",
   "author": "pxpipe",
