@@ -1,0 +1,87 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            build_script: build:win
+          - name: macOS
+            os: macos-latest
+            build_script: build:mac
+          - name: Linux
+            os: ubuntu-latest
+            build_script: build:linux
+
+    steps:
+      - name: Checkout pxpipe-app
+        uses: actions/checkout@v7
+        with:
+          path: pxpipe-app
+
+      - name: Checkout pxpipe proxy
+        uses: actions/checkout@v7
+        with:
+          repository: teamchong/pxpipe
+          path: pxpipe
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pxpipe-app/pnpm-lock.yaml
+
+      - name: Install Linux packaging dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools rpm
+
+      - name: Install dependencies
+        working-directory: pxpipe-app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: pxpipe-app
+        run: pnpm run ${{ matrix.build_script }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pxpipe-app-${{ matrix.name }}
+          path: |
+            pxpipe-app/dist/**/*
+            !pxpipe-app/dist/builder-debug.yml
+            !pxpipe-app/dist/builder-effective-config.yaml
+            !pxpipe-app/dist/**/*.blockmap
+          if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            pxpipe-app/dist/**/*
+            !pxpipe-app/dist/builder-debug.yml
+            !pxpipe-app/dist/builder-effective-config.yaml
+            !pxpipe-app/dist/**/*.blockmap
