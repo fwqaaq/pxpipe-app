@@ -1,100 +1,102 @@
 # pxpipe-app
 
-pxpipe-app 是 pxpipe proxy 的桌面控制台。它使用 Electron、React 和 Tailwind CSS 构建，用来启动本地代理、查看请求遥测、检查图片压缩效果，并管理 Claude / Codex 的代理启动方式。
+pxpipe-app is the desktop control panel for the pxpipe proxy. It is built with Electron, React, and Tailwind CSS to help you start a local proxy, inspect request telemetry, review image-compression results, and manage how Claude / Codex sessions connect to the proxy.
 
-pxpipe 的核心能力是把大段输入上下文渲染成紧凑的 PNG 图片，从而减少模型请求中的输入 token。pxpipe-app 不替代核心代理，而是提供一个更容易操作和观察的桌面界面。
+Chinese version: [README.zh-CN.md](./README.zh-CN.md)
 
-![pxpipe-app 界面截图](./image.png)
+pxpipe's core idea is to render large chunks of input context into compact PNG images so the model request uses fewer input tokens. pxpipe-app does not replace the core proxy; it gives you a much easier way to operate and observe it from a desktop UI.
 
-## 功能概览
+![pxpipe-app screenshot](./image.png)
 
-- **代理控制**：启动、停止本地 pxpipe proxy，查看当前监听地址。
-- **Compression 开关**：运行时启用或关闭图片压缩，不需要重启 App。
-- **请求列表**：查看最近请求的时间、状态、路径、模型、输入、输出、缓存读取和节省量。
-- **Token image inspector**：选择请求后查看哪些输入内容被渲染为 PNG，以及图片背后的源文本。
-- **成本与定价**：展示输入节省、成本拆分、缓存折扣和估算节省金额。
-- **会话统计**：按会话聚合请求数、节省 token 和项目路径。
-- **模型 allowlist**：通过模型芯片控制哪些模型允许使用图片压缩。
-- **历史导入**：将 `~/.pxpipe/events.jsonl` 导入到 App 的 SQLite 数据库。
-- **中英文切换**：界面支持 English / 中文，并会持久化语言偏好。
+## Highlights
 
-## 工作原理
+- **Proxy control**: start and stop the local pxpipe proxy and see the current listening URL.
+- **Compression toggle**: enable or disable image compression at runtime without restarting the app.
+- **Recent requests**: inspect request time, status, path, model, input, output, cache reads, and savings.
+- **Token image inspector**: see which inputs were rendered as PNGs and read the source text behind each image.
+- **Cost & pricing**: view estimated savings, cost breakdown, cache discounts, and projected value.
+- **Session stats**: aggregate request counts, token savings, and project paths by session.
+- **Model allowlist**: control which models are allowed to use image compression.
+- **Legacy import**: import `~/.pxpipe/events.jsonl` into the app's SQLite database.
+- **English / 中文 switch**: the UI supports both languages and persists your preference.
 
-pxpipe-app 启动一个本地代理，默认地址为：
+## How it works
+
+pxpipe-app starts a local proxy on:
 
 ```text
 http://127.0.0.1:47821
 ```
 
-Claude Code、Codex 或其他兼容 API 客户端需要显式把请求发到这个代理。代理收到请求后，会判断模型、路径和输入内容是否适合压缩。只有符合条件的输入块会被渲染为 PNG 图片；其他内容会保持文本透传。
+Claude Code, Codex, or other compatible API clients need to point their requests at that proxy explicitly. When a request arrives, the proxy decides whether the model, path, and input are a good fit for compression. Only eligible input blocks are rendered as PNG images; the rest stays as plain text.
 
-常见会被压缩的内容包括：
+Common content that gets compressed:
 
-- 大段工具输出；
-- 旧的对话历史；
-- 系统提示词和工具说明等静态上下文。
+- large tool output;
+- older conversation history;
+- static context such as system prompts and tool docs.
 
-以下内容通常不会被压缩：
+Common content that usually stays text:
 
-- 最新用户请求；
-- 模型输出；
-- 太短或太稀疏的文本；
-- 不在 allowlist 中的模型；
-- 不支持图片输入的请求形态。
+- the latest user request;
+- model output;
+- text that is too short or too sparse;
+- models that are not on the allowlist;
+- request shapes that do not support image input.
 
-## 模型兼容性与图片效果
+## Model compatibility and image quality
 
-pxpipe 主项目对模型范围采用保守默认值。默认推荐并启用图片压缩的模型是：
+The main pxpipe project uses conservative defaults for model support. The default recommended image-enabled models are:
 
-| 模型 | 默认状态 | 图片化上下文效果 |
+| Model | Default state | Image-context quality |
 | --- | --- | --- |
-| `claude-fable-5` | 默认启用 | 主项目验证效果最好，是 Claude 路径的默认图片读取模型。 |
-| `gpt-5.6` | 默认启用 | GPT 路径的默认启用模型，适合图片化上下文。 |
-| `gpt-5.5` | 可选启用 | 主项目说明其在图片化 history/context 上表现变差，因此默认不启用。 |
-| `claude-opus-4-7` / `claude-opus-4-8` | 可选启用 | 主项目说明 Opus 4.7 / 4.8 存在图片误读风险，适合实验，不适合作为默认值。 |
-| 其他模型 | 默认透传文本 | 除非加入 allowlist，并且请求通过压缩门控，否则不会生成图片。 |
+| `claude-fable-5` | Enabled by default | Best validated result in the main project; default image reader on the Claude path. |
+| `gpt-5.6` | Enabled by default | Default enabled GPT-path model and a good fit for image-based context. |
+| `gpt-5.5` | Optional | The main project notes weaker performance on image-based history/context, so it is not enabled by default. |
+| `claude-opus-4-7` / `claude-opus-4-8` | Optional | The main project reports image misreads risk; useful for experiments, not for the default path. |
+| Other models | Plain text by default | They remain text unless added to the allowlist and accepted by the compression gate. |
 
-即使模型已经加入 allowlist，pxpipe 也不会无条件生成 PNG。代理还会检查输入块的大小、文本密度和图片 token 成本。只有图片化更划算时，请求才会显示 `image ×N` 或 `图片 ×N`。
+Even if a model is on the allowlist, pxpipe will not always generate PNGs. It also checks block size, text density, and image-token cost. When image compression is actually cheaper, the request will show `image ×N` or `图片 ×N`.
 
-如果你选择了 `gpt-5.5`，但 Recent requests 仍显示 `text` / `文本`，这通常不是 App 出错，而是主项目的保守策略或压缩门控在生效。
+If you selected `gpt-5.5` but Recent requests still shows `text`, that is usually the main project's conservative policy or the compression gate at work — not an app bug.
 
-## 为什么使用 ChatGPT 时没有图片压缩
+## Why ChatGPT does not use image compression
 
-ChatGPT 网页版或桌面版本身不会自动走本地 pxpipe 代理。pxpipe 只能处理显式指向它的 API 请求，例如 Codex 或 OpenAI API 客户端使用：
+The ChatGPT web app or desktop app does not automatically route traffic through your local pxpipe proxy. pxpipe can only process requests that are explicitly pointed at it, such as Codex or an OpenAI API client configured with a local base URL:
 
 ```bash
 OPENAI_BASE_URL=http://127.0.0.1:47821/v1 codex
 ```
 
-因此，如果你是在 chatgpt.com 或 ChatGPT 官方 App 中聊天，请求通常不会经过 pxpipe，也就不会出现图片压缩。
+So if you are chatting in chatgpt.com or the official ChatGPT app, the request usually never goes through pxpipe, which means no image compression.
 
-即使请求已经经过 pxpipe，也不一定每次都会生成图片。pxpipe 还会检查模型是否在 allowlist 中、内容是否足够大、图片成本是否低于文本成本。没有满足条件时，请求会以普通文本透传。
+Even when a request does pass through pxpipe, it still may stay text. The proxy checks the allowlist, the input size, and the cost tradeoff. If those checks do not pass, the request is forwarded as plain text.
 
-## 快速开始
+## Quick start
 
-### 安装依赖
+### Install dependencies
 
 ```bash
 pnpm install
 ```
 
-首次安装或切换 Electron 版本后，项目会重建 `better-sqlite3` 原生依赖。这个过程可能需要一些时间。
+The first install, or a switch between Electron versions, will rebuild the native `better-sqlite3` dependency. That can take a little while.
 
-### 开发启动
+### Development
 
 ```bash
 pnpm dev
 ```
 
-启动后，在桌面 App 中点击 **Start**。代理启动后，可以从界面复制 Claude 或 Codex 启动命令。
+After launch, click **Start** in the desktop app. Once the proxy is running, you can copy the Claude or Codex launch command from the UI.
 
-### 生产构建
+### Production build
 
 ```bash
 pnpm build
 ```
 
-平台打包命令：
+Platform packaging commands:
 
 ```bash
 pnpm build:mac
@@ -102,172 +104,158 @@ pnpm build:win
 pnpm build:linux
 ```
 
-## 使用方式
+## Usage
 
-### 启动 Claude
+### Start Claude
 
-在 pxpipe-app 中点击 **Launch Claude**，或手动运行：
+Click **Launch Claude** in pxpipe-app, or run it manually:
 
 ```bash
 ANTHROPIC_BASE_URL=http://127.0.0.1:47821 claude
 ```
 
-### 启动 Codex
+### Start Codex
 
-在 pxpipe-app 中点击 **Launch Codex**，或手动运行：
+Click **Launch Codex** in pxpipe-app, or run it manually:
 
 ```bash
 OPENAI_BASE_URL=http://127.0.0.1:47821/v1 codex
 ```
 
-### 使用 OpenAI API 客户端
+### Use an OpenAI API client
 
-将 OpenAI 客户端的 base URL 指向本地代理：
+Point the client's base URL at the local proxy:
 
 ```text
 http://127.0.0.1:47821/v1
 ```
 
-如果需要由 pxpipe-app 代为设置 OpenAI API Key，可以在 App 的设置中填写 OpenAI upstream 和 API Key。也可以让调用方自己传入 `Authorization` header。
+If you want pxpipe-app to manage the upstream OpenAI key for you, fill in the OpenAI upstream and API key in the app settings. You can also let the caller provide the `Authorization` header directly.
 
-## 界面说明
+## UI guide
 
-### 状态卡
+### Status card
 
-右上角状态卡显示代理是否运行、当前代理地址、Start / Stop 按钮，以及 Compression 开关。
+The top-right status card shows whether the proxy is running, the current proxy URL, the Start / Stop buttons, and the Compression toggle.
 
-Compression 关闭后，请求仍会经过代理，但不会把输入渲染为 PNG。这个开关适合做 A/B 对比，或临时排查图片压缩带来的行为差异。
+When Compression is off, requests still pass through the proxy, but inputs are no longer rendered as PNGs. That is useful for A/B comparisons or for isolating compression-related behavior.
 
 ### Launch through pxpipe
 
-这个区域用于启动新的 Claude 或 Codex 会话。已经启动的终端会话不会自动接入 pxpipe，需要重新启动或手动设置 base URL。
+This area starts new Claude or Codex sessions. Existing terminal sessions do not automatically attach to pxpipe; they need to be restarted or pointed at the proxy base URL manually.
 
 ### Proxy verification
 
-这个区域检查代理是否正在监听，以及 Claude / Codex 最近是否有请求经过代理。若这里长期显示没有流量，通常说明客户端没有指向 `http://127.0.0.1:47821`。
+This section checks whether the proxy is listening and whether Claude / Codex traffic has recently passed through it. If it keeps showing no traffic, the client is probably not pointing at `http://127.0.0.1:47821`.
 
 ### Recent requests
 
-这里展示最近请求。带有 `image` / `图片` 标记的请求表示其中有输入内容被渲染成 PNG。点击这些行可以跳转到下方的 Token image inspector。
+This area shows recent requests. Rows marked with `image` / `图片` indicate that some input content was rendered into PNGs. Clicking one of those rows jumps to the Token image inspector below.
 
 ### Token image inspector
 
-这个区域展示一次请求中的图片化内容，包括：
+This area shows what was image-encoded in a request, including:
 
-- 文本基线 token；
-- PNG 图片数量；
-- 实际发送 token；
-- 图片预览；
-- 图片背后的源文本。
+- the text baseline token count;
+- the number of PNG images;
+- the actual input token count;
+- the image preview;
+- the source text behind each image.
 
-它适合用来确认“哪些内容被压缩了”，以及排查某次请求为什么没有生成图片。
+It is useful for verifying what was compressed and for debugging why a request did not produce images.
 
 ### Cost & pricing
 
-这个区域按代理采集到的遥测估算节省情况。估算结果会受到模型价格、缓存折扣、输出 token 和请求形态影响，因此应作为观测指标，而不是固定承诺。
+This section estimates savings from the telemetry collected by the proxy. The result depends on model pricing, cache discounts, output tokens, and request shape, so treat it as an observation, not a promise.
 
 ### Proxy settings
 
-这里可以修改监听地址、上游 API、模型 allowlist 和自动启动选项。模型 allowlist 决定哪些模型允许图片压缩；不在列表中的模型会透传文本。
+Here you can change the listening address, upstream API, model allowlist, and auto-start options. The model allowlist decides which models are eligible for image compression; anything else stays text.
 
 ### Import legacy JSONL
 
-如果你之前使用过命令行版 pxpipe，可以将旧的事件日志导入桌面 App：
+If you used the command-line pxpipe before, you can import the old event log:
 
 ```text
 ~/.pxpipe/events.jsonl
 ```
 
-导入后，App 会把历史请求写入 SQLite，并在 Recent requests、Sessions 和统计卡片中展示。
+After import, the app writes the history into SQLite and shows it in Recent requests, Sessions, and the telemetry cards.
 
-## 常见问题
+## FAQ
 
-### 为什么没有出现图片？
+### Why am I not seeing images?
 
-可能有以下原因：
+Possible reasons:
 
-- 客户端没有走本地代理；
-- Compression 开关处于关闭状态；
-- 模型不在 allowlist 中；
-- 请求内容太短，不值得压缩；
-- 请求内容太稀疏，图片 token 成本高于文本；
-- 请求路径不是 pxpipe 支持的 API 形态。
+- the client is not using the local proxy;
+- Compression is turned off;
+- the model is not on the allowlist;
+- the input is too short to be worth compressing;
+- the input is too sparse and image tokens would cost more than text;
+- the request path is not one of the proxy-supported API shapes.
 
-### 为什么 Recent requests 没有新请求？
+### Why are there no new requests in Recent requests?
 
-请先确认代理正在运行，并且客户端的 base URL 指向本地代理：
+First check that the proxy is running and that the client points at the local proxy URL:
 
 ```text
 http://127.0.0.1:47821
 ```
 
-Claude 使用 `ANTHROPIC_BASE_URL`，Codex / OpenAI API 客户端使用 `OPENAI_BASE_URL`。
+Claude uses `ANTHROPIC_BASE_URL`; Codex and OpenAI API clients use `OPENAI_BASE_URL`.
 
-### 图片压缩会改变模型回答吗？
+### Can image compression change the model's answer?
 
-有可能。图片压缩是有损的，尤其不适合依赖逐字准确回忆的内容，例如 ID、哈希、密钥、精确数字和人名。pxpipe 会尽量保留最新请求和关键文本，但它不能保证所有图片内容都被模型逐字读准。
+Yes. Image compression is lossy, and it is not a good fit for byte-accurate content such as IDs, hashes, secrets, exact numbers, or names. pxpipe tries to preserve the latest request and the key text, but it cannot guarantee that every image is read verbatim.
 
-如果任务需要字节级准确性，可以关闭 Compression，或使用不在 allowlist 中的模型让请求透传文本。
+If you need byte-level accuracy, turn off Compression or use a model that is not allowlisted so the request stays text.
 
-### 为什么选择 GPT 5.5 后仍然是文本？
+### Why is GPT 5.5 still text after I selected it?
 
-`gpt-5.5` 是可选启用模型，不是主项目默认推荐的图片读取模型。选择 GPT 5.5 后仍然显示文本，通常有以下原因：
+`gpt-5.5` is an optional model, not the main project's default image-reading model. If GPT 5.5 still shows as text, common reasons are:
 
-- 需要点击 **Save settings**，再停止并重新启动代理，新的 allowlist 才会进入当前代理实例；
-- 实际请求模型名不是 `gpt-5.5` 或 `gpt-5.5-*`；
-- 请求内容太短或太稀疏，没有通过压缩门控；
-- Compression 开关处于关闭状态；
-- 客户端没有通过 `OPENAI_BASE_URL=http://127.0.0.1:47821/v1` 走本地代理；
-- 你使用的是 ChatGPT 网页版或官方桌面 App，而不是可配置 base URL 的 API 客户端。
+- you need to click **Save settings**, then stop and restart the proxy so the allowlist updates in the current proxy instance;
+- the actual request model name is not `gpt-5.5` or `gpt-5.5-*`;
+- the input is too short or too sparse and does not pass the compression gate;
+- Compression is turned off;
+- the client is not using `OPENAI_BASE_URL=http://127.0.0.1:47821/v1`;
+- you are using the ChatGPT web app or the official ChatGPT desktop app instead of a configurable API client.
 
-主项目 README 明确说明：GPT 5.5 在图片化上下文上表现变差，所以默认不 silently image。pxpipe-app 允许你把它加入 allowlist，但不承诺它一定会生成图片。
+The main project explicitly notes that GPT 5.5 performs worse on image-based context, so it is not silently imaged by default. pxpipe-app lets you add it to the allowlist, but it does not promise that every request will be turned into images.
 
-### ChatGPT 网页版能用吗？
+### Can ChatGPT web use this?
 
-不能直接使用。ChatGPT 网页版和官方桌面 App 不会自动把流量发送到本地 pxpipe 代理。pxpipe-app 主要面向 Claude Code、Codex，以及可配置 base URL 的 API 客户端。
+Not directly. The ChatGPT web app and the official desktop app do not automatically send traffic through your local pxpipe proxy. pxpipe-app is aimed at Claude Code, Codex, and other API clients that can be configured with a base URL.
 
-### 语言设置保存在哪里？
+### Where is the language preference stored?
 
-语言设置和其他 App 设置一起保存到桌面 App 的 SQLite 数据库中。切换 English / 中文 后会立即生效，并在下次启动时恢复。
+Language preference is stored together with the other app settings in the desktop app's SQLite database. Switching English / 中文 takes effect immediately and is restored the next time the app starts.
 
-## 开发命令
+## Development commands
 
 ```bash
-pnpm dev              # 开发启动
-pnpm typecheck        # TypeScript 类型检查
-pnpm lint             # ESLint 检查
-pnpm build            # 构建主进程、preload 和渲染进程
-pnpm build:unpack     # 构建未打包应用
-pnpm build:mac        # macOS 打包
-pnpm build:win        # Windows 打包
-pnpm build:linux      # Linux 打包
+pnpm dev              # start development mode
+pnpm typecheck        # TypeScript typecheck
+pnpm lint             # ESLint
+pnpm build            # build main, preload, and renderer
+pnpm build:unpack     # build an unpacked app
+pnpm build:mac        # macOS package
+pnpm build:win        # Windows package
+pnpm build:linux      # Linux package
 ```
 
-## 项目结构
+## Project structure
 
 ```text
-src/main/          Electron 主进程、SQLite、代理服务封装
-src/preload/       preload API 暴露
-src/renderer/      React 渲染进程界面
-src/shared/        主进程和渲染进程共享类型
+src/main/          Electron main process, SQLite, and proxy service wrapper
+src/preload/       Preload API bridge
+src/renderer/      React UI
+src/shared/        Shared types between main and renderer
 ```
 
-核心压缩逻辑来自相邻的 `pxpipe` 仓库，并通过 `pxpipe-proxy` 本地依赖引入：
+The core compression logic comes from the sibling `pxpipe` repository and is imported through the local `pxpipe-proxy` dependency:
 
 ```json
 "pxpipe-proxy": "file:../pxpipe"
 ```
-
-## 与 pxpipe 主项目的关系
-
-pxpipe-app 是桌面控制台，核心压缩逻辑来自上游项目 pxpipe / `pxpipe-proxy`。当前仓库通过本地依赖引用相邻的主项目：
-
-```json
-"pxpipe-proxy": "file:../pxpipe"
-```
-
-上游项目主页：<https://github.com/teamchong/pxpipe>。
-
-## 许可
-
-pxpipe-app 使用 MIT License。分发包含 `pxpipe-proxy` 的构建产物时，应同时保留上游 pxpipe 项目的 MIT License 和版权声明。
