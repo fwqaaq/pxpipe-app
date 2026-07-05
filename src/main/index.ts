@@ -1,4 +1,14 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  nativeTheme,
+  Tray,
+  Menu,
+  nativeImage
+} from 'electron'
 import { join } from 'node:path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -8,10 +18,12 @@ import { launchClient } from './launcher'
 import type { AppSettings, PersistedEvent, ProxyStatus } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
 let db: AppDatabase
 let proxy: ProxyService
 let databaseClosed = false
 let quitAfterProxyStop = false
+let isQuitting = false
 
 function broadcast(channel: string, payload: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -25,6 +37,63 @@ function closeDatabase(): void {
   db.close()
 }
 
+function showMainWindow(): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+  createWindow()
+}
+
+function updateTray(): void {
+  if (!tray) return
+  const status = proxy.getStatus()
+  tray.setToolTip(status.running ? `pxpipe — running on ${status.url}` : 'pxpipe — stopped')
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: status.running ? `Running on ${status.url}` : 'Proxy stopped',
+        enabled: false
+      },
+      { type: 'separator' },
+      status.running
+        ? {
+            label: 'Stop proxy',
+            click: (): void => {
+              void proxy.stop().catch(() => undefined)
+            }
+          }
+        : {
+            label: 'Start proxy',
+            click: (): void => {
+              void proxy.start(db.getSettings()).catch((error: unknown) => {
+                broadcast('pxpipe:status', {
+                  ...proxy.getStatus(),
+                  running: false,
+                  error: error instanceof Error ? error.message : String(error)
+                } satisfies ProxyStatus)
+              })
+            }
+          },
+      { type: 'separator' },
+      { label: 'Show pxpipe', click: showMainWindow },
+      { label: 'Quit pxpipe', role: 'quit' }
+    ])
+  )
+}
+
+function createTray(): void {
+  if (process.platform !== 'darwin' || tray) return
+  const image = nativeImage.createFromPath(icon).resize({ width: 18, height: 18 })
+  tray = new Tray(image)
+  tray.on('click', () => {
+    // Keep default context-menu behavior on macOS; clicking opens the menu.
+  })
+  updateTray()
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1180,
@@ -34,6 +103,12 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'pxpipe desktop',
+    ...(process.platform === 'darwin'
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 16, y: 12 }
+        }
+      : {}),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -43,6 +118,19 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // macOS: hide to tray instead of destroying the window, so the renderer
+  // keeps its state and reopening does not trigger a full reload (issue 6).
+  mainWindow.on('close', (event) => {
+    if (process.platform === 'darwin' && !isQuitting) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -61,7 +149,9 @@ function registerIpc(): void {
   ipcMain.handle('pxpipe:getSettings', () => db.getSettings())
 
   ipcMain.handle('pxpipe:updateSettings', (_event, patch: Partial<AppSettings>) => {
-    return db.updateSettings(patch)
+    const next = db.updateSettings(patch)
+    nativeTheme.themeSource = next.theme
+    return next
   })
 
   ipcMain.handle('pxpipe:startProxy', async (_event, patch?: Partial<AppSettings>) => {
@@ -121,13 +211,18 @@ async function bootstrap(): Promise<void> {
   })
 
   db = new AppDatabase()
+  nativeTheme.themeSource = db.getSettings().theme
   proxy = new ProxyService(
     db,
     (event: PersistedEvent) => broadcast('pxpipe:event', event),
-    (status: ProxyStatus) => broadcast('pxpipe:status', status)
+    (status: ProxyStatus) => {
+      broadcast('pxpipe:status', status)
+      updateTray()
+    }
   )
   registerIpc()
   createWindow()
+  createTray()
 
   const settings = db.getSettings()
   if (settings.autoStart) {
@@ -143,7 +238,7 @@ async function bootstrap(): Promise<void> {
   }
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    showMainWindow()
   })
 }
 
@@ -158,6 +253,7 @@ void app
   })
 
 app.on('before-quit', (event) => {
+  isQuitting = true
   if (proxy?.getStatus().running && !quitAfterProxyStop) {
     event.preventDefault()
     quitAfterProxyStop = true

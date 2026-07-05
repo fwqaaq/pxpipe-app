@@ -1,6 +1,7 @@
 export type PxpipeProvider = '' | 'cloudflare-ai-gateway'
 export type LaunchKind = 'claude' | 'codex'
 export type AppLanguage = 'en' | 'zh'
+export type AppTheme = 'dark' | 'light' | 'system'
 
 export interface AppSettings {
   host: string
@@ -14,6 +15,7 @@ export interface AppSettings {
   modelBases: string[]
   autoStart: boolean
   language: AppLanguage
+  theme: AppTheme
 }
 
 export interface ProxyStatus {

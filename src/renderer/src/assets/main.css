@@ -2,10 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme tokens.
+ * All color tokens are space-separated RGB channel triplets consumed by
+ * tailwind.config.js as `rgb(var(--x) / <alpha-value>)`.
+ * Dark is the default; light values apply via prefers-color-scheme, which the
+ * Electron main process drives through nativeTheme.themeSource
+ * ('dark' | 'light' | 'system' from settings.theme).
+ */
 :root {
+  --ink: 11 16 20;
+  --paper: 242 239 231;
+  --fg: 255 255 255;
+  --surface: 16 23 29;
+  --surface-raised: 21 31 38;
+  --surface-sunken: 12 18 24;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --circuit: 110 231 183;
+  --brass: 217 164 65;
+  --danger: 255 107 107;
+
   color-scheme: dark;
-  background: #0b1014;
+  background: rgb(var(--ink));
   font-family: 'Avenir Next', 'Segoe UI Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --ink: 244 241 234;
+    --paper: 26 34 43;
+    --fg: 15 23 32;
+    --surface: 255 255 255;
+    --surface-raised: 249 247 242;
+    --surface-sunken: 236 233 225;
+    --line: rgba(15, 23, 32, 0.1);
+    --line-strong: rgba(15, 23, 32, 0.18);
+    --circuit: 13 148 104;
+    --brass: 169 118 18;
+    --danger: 205 60 60;
+
+    color-scheme: light;
+  }
 }
 
 * {
@@ -49,10 +87,71 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(110, 231, 183, 0.36);
+  background: rgb(var(--fg) / 0.14);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--fg) / 0.26);
+  background-clip: padding-box;
+}
+
+/* Ambient glow behind the app (replaces the old striped grid overlay). */
+.app-glow {
+  background: radial-gradient(
+    120% 80% at 50% -20%,
+    rgb(var(--circuit) / 0.1),
+    transparent 55%
+  );
+}
+
+/* Electron frameless title bar helpers. */
+.drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@layer components {
+  /* Standard elevated panel — solid surface, hairline border, soft shadow. */
+  .panel {
+    @apply rounded-panel border border-line bg-surface shadow-soft;
+  }
+
+  /* Nested / inset block inside a panel. */
+  .inset {
+    @apply rounded-card border border-line bg-surface-sunken;
+  }
+
+  /* Text input / field. */
+  .field {
+    @apply rounded-field border border-line bg-surface-sunken px-3 py-2 font-mono text-sm text-paper outline-none transition placeholder:text-white/30 focus:border-circuit/60 focus:bg-surface;
+  }
+
+  /* Buttons. */
+  .btn {
+    @apply rounded-field px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-circuit text-ink hover:brightness-105 active:brightness-95;
+  }
+  .btn-accent {
+    @apply btn bg-brass text-ink hover:brightness-105 active:brightness-95;
+  }
+  .btn-ghost {
+    @apply btn border border-line-strong text-paper/80 hover:border-white/25 hover:bg-white/5 hover:text-paper;
+  }
+
+  /* Section eyebrow label. */
+  .eyebrow {
+    @apply font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-white/45;
+  }
 }

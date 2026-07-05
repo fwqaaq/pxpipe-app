@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type {
   AppSettings,
+  AppTheme,
   CurrentSessionPayload,
   DashboardRecentPayload,
   DashboardRecentRow,
@@ -17,6 +18,9 @@ import type {
   TokenImagePayload
 } from '../../shared/types'
 import { MODEL_CATALOG, type ModelFamily } from '../../shared/model-catalog'
+
+/** macOS uses a hidden-inset native title bar, so the layout leaves room for traffic lights. */
+const isMac = navigator.userAgent.includes('Macintosh')
 import {
   I18nProvider,
   localeFor,
@@ -128,7 +132,7 @@ function ModelChip({
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
         selected
           ? 'border-circuit/70 bg-circuit/15 text-circuit shadow-glow'
-          : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-white/25 hover:text-white/80'
+          : 'border-line bg-surface text-white/55 hover:border-white/25 hover:text-white/80'
       }`}
     >
       {label}
@@ -162,8 +166,8 @@ function StatCard({
   const toneClass =
     tone === 'good' ? 'text-circuit' : tone === 'warn' ? 'text-danger' : 'text-paper'
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
-      <div className="text-xs uppercase tracking-[0.28em] text-white/40">{label}</div>
+    <div className="panel p-5">
+      <div className="text-xs uppercase tracking-[0.1em] text-white/50">{label}</div>
       <div className={`mt-3 font-display text-3xl font-semibold ${toneClass}`}>{value}</div>
     </div>
   )
@@ -181,8 +185,8 @@ function BreakdownMetric({
   const toneClass =
     tone === 'good' ? 'text-circuit' : tone === 'warn' ? 'text-danger' : 'text-paper'
   return (
-    <div className="min-w-0 rounded-2xl border border-white/10 bg-black/20 p-3">
-      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">{label}</div>
+    <div className="inset min-w-0 p-3">
+      <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">{label}</div>
       <div className={`mt-1 font-display text-2xl font-bold ${toneClass}`}>{value}</div>
     </div>
   )
@@ -190,7 +194,7 @@ function BreakdownMetric({
 
 function PricingRow({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2 text-sm">
+    <div className="flex items-center justify-between gap-3 border-b border-line pb-2 text-sm">
       <span className="text-white/55">{label}</span>
       <span className="font-mono text-paper">{value}</span>
     </div>
@@ -202,10 +206,10 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
   const pricing = proxyStats?.pricing_assumptions
   const savedTone = (proxyStats?.saved_usd ?? 0) >= 0
   return (
-    <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+    <div className="panel p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="font-mono text-[11px] font-black uppercase tracking-[0.26em] text-brass">
+          <div className="font-mono text-[11px] font-black uppercase tracking-[0.12em] text-brass">
             {t('pricing.api')}
           </div>
           <h2 className="mt-2 font-display text-2xl font-bold tracking-[-0.03em]">
@@ -221,7 +225,7 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
               savedTone ? 'border-circuit/25 bg-circuit/10' : 'border-danger/25 bg-danger/10'
             }`}
           >
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/40">
               {t('pricing.savedSoFar')}
             </div>
             <div
@@ -239,13 +243,13 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
       </div>
 
       {!proxyStats ? (
-        <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-black/20 p-8 text-center text-sm text-white/40">
+        <div className="mt-5 rounded-card border border-dashed border-line-strong bg-surface-sunken p-8 text-center text-sm text-white/40">
           {t('pricing.empty')}
         </div>
       ) : (
         <div className="mt-5 grid grid-cols-3 gap-4">
-          <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
+          <div className="inset p-4">
+            <div className="text-xs font-black uppercase tracking-[0.1em] text-white/40">
               {t('pricing.savingsShare')}
             </div>
             <div className="mt-3 grid gap-2">
@@ -271,8 +275,8 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
+          <div className="inset p-4">
+            <div className="text-xs font-black uppercase tracking-[0.1em] text-white/40">
               {t('pricing.observedSplit')}
             </div>
             <div className="mt-3 grid gap-2">
@@ -306,7 +310,7 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
           </div>
 
           <div className="rounded-3xl border border-brass/20 bg-brass/[0.07] p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-brass">
+            <div className="text-xs font-black uppercase tracking-[0.1em] text-brass">
               {t('pricing.assumptions')}
             </div>
             <div className="mt-3 grid gap-2">
@@ -343,12 +347,14 @@ function ImageVsTextPanel({
   breakdown,
   tokenImage,
   imageSource,
+  galleryImageDataUrls,
   selectedTokenImageId,
   onSelectImage
 }: {
   breakdown: ImageVsTextBreakdownPayload | null
   tokenImage: TokenImagePayload | null
   imageSource: ImageSourcePayload | null
+  galleryImageDataUrls: Record<number, string>
   selectedTokenImageId: number | undefined
   onSelectImage: (id: number) => void
 }): React.JSX.Element {
@@ -362,10 +368,10 @@ function ImageVsTextPanel({
     : '/api/image-vs-text-breakdown.json'
 
   return (
-    <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+    <div className="panel p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="font-mono text-[11px] font-black uppercase tracking-[0.26em] text-circuit">
+          <div className="font-mono text-[11px] font-black uppercase tracking-[0.12em] text-circuit">
             {t('inspector.api')}
           </div>
           <h2 className="mt-2 font-display text-2xl font-bold tracking-[-0.03em]">
@@ -381,7 +387,7 @@ function ImageVsTextPanel({
       </div>
 
       {breakdown?.error ? (
-        <div className="mt-5 rounded-3xl border border-dashed border-white/15 bg-black/20 p-8 text-center">
+        <div className="mt-5 rounded-card border border-dashed border-line-strong bg-surface-sunken p-8 text-center">
           <div className="font-display text-2xl font-bold text-paper">
             {t('inspector.emptyTitle')}
           </div>
@@ -409,7 +415,7 @@ function ImageVsTextPanel({
             />
           </div>
 
-          <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+          <div className="mt-3 inset px-4 py-3 text-sm text-white/55">
             <span
               className={savedTone === 'good' ? 'font-bold text-circuit' : 'font-bold text-danger'}
             >
@@ -428,7 +434,7 @@ function ImageVsTextPanel({
 
           <div className="mt-5 grid grid-cols-2 gap-4">
             <div className="rounded-3xl border border-brass/20 bg-brass/10 p-4">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-brass">
+              <div className="text-xs font-black uppercase tracking-[0.1em] text-brass">
                 {t('inspector.becameImages')}
               </div>
               <div className="mt-3 grid gap-2 text-sm">
@@ -436,7 +442,7 @@ function ImageVsTextPanel({
                   ([key, value]) => (
                     <div
                       key={key}
-                      className="flex justify-between gap-3 border-b border-white/10 pb-2"
+                      className="flex justify-between gap-3 border-b border-line pb-2"
                     >
                       <span className="text-white/55">{key.replace(/_/g, ' ')}</span>
                       <span className="font-mono text-paper">
@@ -451,15 +457,15 @@ function ImageVsTextPanel({
               </div>
             </div>
             <div className="rounded-3xl border border-circuit/20 bg-circuit/10 p-4">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-circuit">
+              <div className="text-xs font-black uppercase tracking-[0.1em] text-circuit">
                 {t('inspector.stayedText')}
               </div>
               <div className="mt-3 grid gap-2 text-sm text-white/55">
-                <div className="flex justify-between border-b border-white/10 pb-2">
+                <div className="flex justify-between border-b border-line pb-2">
                   <span>{t('inspector.latestMessages')}</span>
                   <span className="text-paper">{t('inspector.verbatim')}</span>
                 </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
+                <div className="flex justify-between border-b border-line pb-2">
                   <span>{t('inspector.modelOutput')}</span>
                   <span className="text-paper">{t('inspector.verbatim')}</span>
                 </div>
@@ -470,81 +476,84 @@ function ImageVsTextPanel({
 
           <div className="mt-5">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
+              <div className="text-xs font-black uppercase tracking-[0.1em] text-white/40">
                 {t('inspector.gallery')}
               </div>
               <div className="text-xs text-white/35">{t('inspector.galleryHint')}</div>
             </div>
             {images.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center text-white/35">
+              <div className="rounded-card border border-dashed border-line p-8 text-center text-white/35">
                 {t('inspector.noPages')}
               </div>
             ) : (
-              <div className="grid max-h-60 grid-cols-3 gap-3 overflow-auto rounded-3xl border border-white/10 bg-black/20 p-3">
-                {images.map((image) => (
-                  <button
-                    key={image.id}
-                    type="button"
-                    onClick={() => onSelectImage(image.id)}
-                    className={`min-h-28 rounded-2xl border p-2 text-left transition ${
-                      selectedTokenImageId === image.id
-                        ? 'border-circuit bg-circuit/10'
-                        : 'border-white/10 bg-white/[0.04] hover:border-white/25'
-                    }`}
-                  >
-                    {image.available ? (
-                      <img
-                        src={
-                          selectedTokenImageId === image.id && tokenImage?.dataUrl
-                            ? tokenImage.dataUrl
-                            : image.png_url
-                        }
-                        alt={t('inspector.imageAlt', { id: image.id })}
-                        className="h-24 w-full rounded-xl bg-white object-cover object-top [image-rendering:pixelated]"
-                      />
-                    ) : (
-                      <div className="grid h-24 place-items-center rounded-xl border border-dashed border-white/15 text-center text-xs text-white/35">
-                        {t('inspector.imageExpired')}
+              <div className="grid max-h-60 grid-cols-3 gap-3 overflow-auto inset p-3">
+                {images.map((image) => {
+                  const dataUrl =
+                    selectedTokenImageId === image.id && tokenImage?.dataUrl
+                      ? tokenImage.dataUrl
+                      : galleryImageDataUrls[image.id]
+
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => onSelectImage(image.id)}
+                      className={`min-h-28 rounded-2xl border p-2 text-left transition ${
+                        selectedTokenImageId === image.id
+                          ? 'border-circuit bg-circuit/10'
+                          : 'border-line bg-surface hover:border-white/25'
+                      }`}
+                    >
+                      {image.available && dataUrl ? (
+                        <img
+                          src={dataUrl}
+                          alt={t('inspector.imageAlt', { id: image.id })}
+                          className="h-24 w-full rounded-xl bg-[#fff] object-cover object-top [image-rendering:pixelated]"
+                        />
+                      ) : (
+                        <div className="grid h-24 place-items-center rounded-xl border border-dashed border-white/15 bg-surface-sunken text-center text-xs text-white/35">
+                          {image.available ? 'PNG' : t('inspector.imageExpired')}
+                        </div>
+                      )}
+                      <div className="mt-2 font-mono text-xs text-white/50">
+                        {t('inspector.imageLabel', { id: image.id })}
                       </div>
-                    )}
-                    <div className="mt-2 font-mono text-xs text-white/50">
-                      {t('inspector.imageLabel', { id: image.id })}
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-4">
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-3">
-              <div className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/40">
+            <div className="inset p-3">
+              <div className="mb-2 text-xs font-black uppercase tracking-[0.1em] text-white/40">
                 {t('inspector.preview')}
               </div>
               {tokenImage?.available && tokenImage.dataUrl ? (
                 <img
                   src={tokenImage.dataUrl}
                   alt={t('inspector.selectedImageAlt', { id: selectedTokenImageId ?? '' })}
-                  className="max-h-72 w-full rounded-2xl bg-white object-contain object-top [image-rendering:pixelated]"
+                  className="max-h-72 w-full rounded-2xl bg-[#fff] object-contain object-top [image-rendering:pixelated]"
                 />
               ) : (
-                <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-white/10 text-center text-sm text-white/35">
+                <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-line text-center text-sm text-white/35">
                   {selectedTokenImageId == null
                     ? t('inspector.selectPage')
                     : t('inspector.imageExpired')}
                 </div>
               )}
             </div>
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-3">
-              <div className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-white/40">
+            <div className="inset p-3">
+              <div className="mb-2 text-xs font-black uppercase tracking-[0.1em] text-white/40">
                 {t('inspector.source')}
               </div>
               {imageSource?.available ? (
-                <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-black/30 p-3 font-mono text-[11px] leading-5 text-white/60">
+                <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-surface-raised p-3 font-mono text-[11px] leading-5 text-paper/75">
                   {imageSource.sourceText}
                 </pre>
               ) : (
-                <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-white/10 text-center text-sm text-white/35">
+                <div className="grid min-h-52 place-items-center rounded-2xl border border-dashed border-line text-center text-sm text-white/35">
                   {imageSource?.error ?? t('inspector.sourcePlaceholder')}
                 </div>
               )}
@@ -577,6 +586,7 @@ function App(): React.JSX.Element {
   const [selectedTokenImageId, setSelectedTokenImageId] = useState<number | undefined>()
   const [tokenImage, setTokenImage] = useState<TokenImagePayload | null>(null)
   const [imageSource, setImageSource] = useState<ImageSourcePayload | null>(null)
+  const [galleryImageDataUrls, setGalleryImageDataUrls] = useState<Record<number, string>>({})
   const [proxyStats, setProxyStats] = useState<ProxyStatsPayload | null>(null)
   const [currentSession, setCurrentSession] = useState<CurrentSessionPayload | null>(null)
 
@@ -584,6 +594,55 @@ function App(): React.JSX.Element {
   const lang: Lang = settings?.language ?? 'en'
   const locale = localeFor(lang)
   const t = useMemo(() => tFor(lang), [lang])
+  const galleryImageIdsKey = useMemo(
+    () =>
+      breakdown?.became_images?.images
+        .filter((image) => image.available)
+        .map((image) => image.id)
+        .join(',') ?? '',
+    [breakdown]
+  )
+
+  useEffect(() => {
+    if (!galleryImageIdsKey) return
+
+    const missingIds = galleryImageIdsKey
+      .split(',')
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && galleryImageDataUrls[id] == null)
+
+    if (missingIds.length === 0) return
+
+    let cancelled = false
+
+    void Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const image = await window.pxpipe.getTokenImage(id)
+          return [id, image.available && image.dataUrl ? image.dataUrl : null] as const
+        } catch {
+          return [id, null] as const
+        }
+      })
+    ).then((entries) => {
+      if (cancelled) return
+      setGalleryImageDataUrls((previous) => {
+        let changed = false
+        const next = { ...previous }
+        for (const [id, dataUrl] of entries) {
+          if (dataUrl && next[id] !== dataUrl) {
+            next[id] = dataUrl
+            changed = true
+          }
+        }
+        return changed ? next : previous
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [galleryImageIdsKey, galleryImageDataUrls])
 
   async function loadTokenImage(id: number | undefined): Promise<void> {
     if (id == null) {
@@ -598,6 +657,12 @@ function App(): React.JSX.Element {
       window.pxpipe.getImageSource(id)
     ])
     setTokenImage(image)
+    if (image.available && image.dataUrl) {
+      const dataUrl = image.dataUrl
+      setGalleryImageDataUrls((previous) =>
+        previous[id] === dataUrl ? previous : { ...previous, [id]: dataUrl }
+      )
+    }
     setImageSource(source)
   }
 
@@ -614,9 +679,12 @@ function App(): React.JSX.Element {
     setSelectedBreakdownId(id)
     const nextBreakdown = await window.pxpipe.getImageVsTextBreakdown(id)
     setBreakdown(nextBreakdown)
-    const firstAvailable = nextBreakdown.became_images?.images.find((image) => image.available)?.id
-    const firstAny = nextBreakdown.became_images?.images[0]?.id
-    await loadTokenImage(selectedTokenImageId ?? firstAvailable ?? firstAny)
+    const nextImages = nextBreakdown.became_images?.images ?? []
+    const selectedStillPresent =
+      selectedTokenImageId != null && nextImages.some((image) => image.id === selectedTokenImageId)
+    const firstAvailable = nextImages.find((image) => image.available)?.id
+    const firstAny = nextImages[0]?.id
+    await loadTokenImage(selectedStillPresent ? selectedTokenImageId : (firstAvailable ?? firstAny))
   }
 
   async function selectBreakdown(id: number): Promise<void> {
@@ -708,7 +776,9 @@ function App(): React.JSX.Element {
           return {
             key: `d-${row.ts}-${index}`,
             index: index + 1,
-            time: new Date(row.ts).toLocaleTimeString(locale),
+            // row.ts is a Unix timestamp in SECONDS (dashboard stamps Date.now()/1000);
+            // Date() expects milliseconds, so scale up or every row shows the same time.
+            time: new Date(row.ts * 1000).toLocaleTimeString(locale),
             status: row.status,
             path: shortPath(row.path),
             model: row.model,
@@ -842,6 +912,14 @@ function App(): React.JSX.Element {
     setModelBasesText(next.modelBases.join(', '))
   }
 
+  async function setTheme(theme: AppTheme): Promise<void> {
+    if (!settings || settings.theme === theme) return
+    const optimistic = { ...settings, theme }
+    setSettings(optimistic)
+    const next = await window.pxpipe.updateSettings({ theme })
+    setSettings(next)
+  }
+
   async function importJsonl(): Promise<void> {
     try {
       const result: ImportResult = await window.pxpipe.importJsonl(importPath)
@@ -866,27 +944,58 @@ function App(): React.JSX.Element {
   return (
     <I18nProvider lang={lang}>
       <main className="min-h-screen overflow-x-hidden bg-ink text-paper">
-        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(110,231,183,.22),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(217,164,65,.18),transparent_30%),linear-gradient(135deg,rgba(255,255,255,.06),transparent_35%)]" />
-        <div className="pointer-events-none fixed inset-0 opacity-[0.08] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:44px_44px]" />
+        <div className="app-glow pointer-events-none fixed inset-0" />
 
-        <section className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-8 pb-12 pt-7">
-          <header className="flex items-start justify-between gap-6">
-            <div>
-              <div className="mb-3 inline-flex rounded-full border border-circuit/30 bg-circuit/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-circuit">
-                {t('header.badge')}
+        {isMac && <div className="drag fixed inset-x-0 top-0 z-50 h-9" />}
+
+        <section
+          className={`relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-8 pb-12 ${
+            isMac ? 'pt-11' : 'pt-7'
+          }`}
+        >
+          <header className="flex flex-col gap-5">
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0">
+                <div className="mb-3 inline-flex items-center rounded-full border border-circuit/30 bg-circuit/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-circuit">
+                  {t('header.badge')}
+                </div>
+                <h1 className="font-display text-4xl font-black tracking-[-0.04em] sm:text-5xl">
+                  {t('header.title')}
+                </h1>
+                <p className="mt-2.5 max-w-2xl text-sm leading-6 text-white/60">
+                  {t('header.description')}
+                </p>
               </div>
-              <h1 className="font-display text-5xl font-black tracking-[-0.05em]">
-                {t('header.title')}
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
-                {t('header.description')}
-              </p>
-            </div>
 
-            <div className="w-72 shrink-0 rounded-3xl border border-white/10 bg-white/[0.06] p-4 shadow-panel backdrop-blur">
-              <div className="mb-3 flex justify-end">
+              <div className="flex shrink-0 items-center gap-2.5">
                 <div
-                  className="inline-flex rounded-full border border-white/10 bg-black/20 p-1"
+                  className="inline-flex rounded-full border border-line bg-surface p-1"
+                  role="group"
+                  aria-label={t('header.theme')}
+                >
+                  {(['light', 'system', 'dark'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => void setTheme(option)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                        settings.theme === option
+                          ? 'bg-circuit/15 text-circuit'
+                          : 'text-white/50 hover:text-white/85'
+                      }`}
+                    >
+                      {option === 'light'
+                        ? t('header.themeLight')
+                        : option === 'dark'
+                          ? t('header.themeDark')
+                          : t('header.themeSystem')}
+                    </button>
+                  ))}
+                </div>
+
+                <div
+                  className="inline-flex rounded-full border border-line bg-surface p-1"
+                  role="group"
                   aria-label="Language"
                 >
                   {(['en', 'zh'] as const).map((option) => (
@@ -894,10 +1003,10 @@ function App(): React.JSX.Element {
                       key={option}
                       type="button"
                       onClick={() => void setLanguage(option)}
-                      className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
                         lang === option
-                          ? 'bg-circuit/15 text-circuit shadow-glow'
-                          : 'text-white/45 hover:text-white/80'
+                          ? 'bg-circuit/15 text-circuit'
+                          : 'text-white/50 hover:text-white/85'
                       }`}
                     >
                       {option === 'en' ? t('header.langEn') : t('header.langZh')}
@@ -905,46 +1014,39 @@ function App(): React.JSX.Element {
                   ))}
                 </div>
               </div>
-              <div
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${
-                  status.running
-                    ? 'border-circuit/40 bg-circuit/10 text-circuit'
-                    : 'border-danger/40 bg-danger/10 text-danger'
-                }`}
-              >
+            </div>
+
+            {/* Connection control bar — status, proxy URL, compression, start/stop laid out horizontally. */}
+            <div className="panel flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-3.5">
+              <div className="flex items-center gap-2.5 pr-1">
                 <span
-                  className={`h-2 w-2 rounded-full ${
+                  className={`h-2.5 w-2.5 rounded-full ${
                     status.running ? 'bg-circuit animate-pulse' : 'bg-danger'
                   }`}
                 />
-                {status.running ? t('status.running') : t('status.stopped')}
-              </div>
-              <div className="mt-2 truncate font-mono text-xs text-white/60" title={proxyUrl}>
-                {proxyUrl}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button
-                  className="rounded-2xl bg-circuit px-4 py-2 text-sm font-bold text-ink transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={status.running}
-                  onClick={startProxy}
+                <span
+                  className={`text-sm font-semibold ${status.running ? 'text-circuit' : 'text-danger'}`}
                 >
-                  {t('status.start')}
-                </button>
-                <button
-                  className="rounded-2xl border border-white/15 px-4 py-2 text-sm font-bold text-paper transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={!status.running}
-                  onClick={stopProxy}
-                >
-                  {t('status.stop')}
-                </button>
+                  {status.running ? t('status.running') : t('status.stopped')}
+                </span>
               </div>
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+
+              <div className="inset flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2">
+                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-white/35">
+                  URL
+                </span>
+                <span className="truncate font-mono text-xs text-white/75" title={proxyUrl}>
+                  {proxyUrl}
+                </span>
+              </div>
+
+              <div className="inset flex items-center gap-3 px-3 py-1.5">
                 <div className="min-w-0">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/45">
                     {t('status.compression')}
                   </div>
                   <div
-                    className={`mt-0.5 text-xs font-semibold ${proxyStats?.compression_enabled ? 'text-circuit' : 'text-white/45'}`}
+                    className={`text-xs font-semibold ${proxyStats?.compression_enabled ? 'text-circuit' : 'text-white/55'}`}
                   >
                     {proxyStats == null
                       ? t('status.compressionUnavailable')
@@ -958,10 +1060,10 @@ function App(): React.JSX.Element {
                   role="switch"
                   aria-label={t('status.compressionSwitch')}
                   aria-checked={Boolean(proxyStats?.compression_enabled)}
-                  className={`inline-flex h-5 w-9 items-center rounded-full border p-0.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  className={`inline-flex h-5 w-9 shrink-0 items-center rounded-full border p-0.5 transition disabled:cursor-not-allowed disabled:opacity-40 ${
                     proxyStats?.compression_enabled
                       ? 'border-circuit/60 bg-circuit/70'
-                      : 'border-white/15 bg-white/10'
+                      : 'border-line-strong bg-white/10'
                   }`}
                   disabled={!status.running || proxyStats == null}
                   onClick={toggleCompression}
@@ -971,6 +1073,19 @@ function App(): React.JSX.Element {
                       proxyStats?.compression_enabled ? 'translate-x-4' : 'translate-x-0'
                     }`}
                   />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  className="btn-primary px-5"
+                  disabled={status.running}
+                  onClick={startProxy}
+                >
+                  {t('status.start')}
+                </button>
+                <button className="btn-ghost px-5" disabled={!status.running} onClick={stopProxy}>
+                  {t('status.stop')}
                 </button>
               </div>
             </div>
@@ -991,14 +1106,14 @@ function App(): React.JSX.Element {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-white/55">{t('launch.description')}</p>
                 </div>
-                <div className="max-w-full shrink-0 whitespace-nowrap rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.12em] text-white/45">
+                <div className="max-w-full shrink-0 whitespace-nowrap rounded-full border border-line px-3 py-1 text-xs uppercase tracking-[0.12em] text-white/45">
                   {t('launch.verifiedEnv')}
                 </div>
               </div>
-              <label className="mt-4 grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+              <label className="mt-4 grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                 {t('launch.cwd')}
                 <input
-                  className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                  className="field"
                   placeholder="~/Project/pxpipe"
                   value={launchCwd}
                   onChange={(event) => setLaunchCwd(event.target.value)}
@@ -1006,69 +1121,69 @@ function App(): React.JSX.Element {
               </label>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button
-                  className="rounded-2xl bg-circuit px-4 py-3 text-sm font-black text-ink transition hover:scale-[1.01] disabled:opacity-40"
+                  className="btn-primary w-full"
                   disabled={!status.running}
                   onClick={() => launch('claude')}
                 >
                   {t('launch.claude')}
                 </button>
                 <button
-                  className="rounded-2xl bg-brass px-4 py-3 text-sm font-black text-ink transition hover:scale-[1.01] disabled:opacity-40"
+                  className="btn-accent w-full"
                   disabled={!status.running}
                   onClick={() => launch('codex')}
                 >
                   {t('launch.codex')}
                 </button>
                 <button
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-bold text-white/60 hover:bg-white/10"
+                  className="btn-ghost"
                   onClick={() => copyCommand('claude')}
                 >
                   {t('launch.copyClaude')}
                 </button>
                 <button
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-bold text-white/60 hover:bg-white/10"
+                  className="btn-ghost"
                   onClick={() => copyCommand('codex')}
                 >
                   {t('launch.copyCodex')}
                 </button>
               </div>
               {lastLaunch && (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3 font-mono text-xs text-white/55">
+                <div className="mt-4 inset p-3 font-mono text-xs text-white/55">
                   {lastLaunch.command}
                 </div>
               )}
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+            <div className="panel p-5">
               <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
                 {t('verify.title')}
               </h2>
               <div className="mt-4 grid gap-3 text-sm">
-                <div className="flex items-center justify-between rounded-2xl bg-black/20 px-3 py-2">
+                <div className="flex items-center justify-between inset px-3 py-2">
                   <span className="text-white/45">{t('verify.listening')}</span>
                   <span className={verification.listening ? 'text-circuit' : 'text-danger'}>
                     {verification.listening ? t('verify.yes') : t('verify.no')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-black/20 px-3 py-2">
+                <div className="flex items-center justify-between inset px-3 py-2">
                   <span className="text-white/45">{t('verify.claudeLastSeen')}</span>
                   <span className="text-circuit">
                     {shortDate(verification.claudeLastSeen, locale)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-black/20 px-3 py-2">
+                <div className="flex items-center justify-between inset px-3 py-2">
                   <span className="text-white/45">{t('verify.codexLastSeen')}</span>
                   <span className={verification.codexLastSeen ? 'text-circuit' : 'text-danger'}>
                     {shortDate(verification.codexLastSeen, locale)}
                   </span>
                 </div>
-                <div className="rounded-2xl bg-black/20 px-3 py-2 font-mono text-xs text-white/45">
+                <div className="inset px-3 py-2 font-mono text-xs text-white/45">
                   Claude: ANTHROPIC_BASE_URL={verification.claudeBaseUrl}
                   <br />
                   Codex: OPENAI_BASE_URL={verification.codexBaseUrl}
                 </div>
-                <div className="rounded-2xl bg-black/20 px-3 py-3">
-                  <div className="mb-2 text-xs uppercase tracking-[0.18em] text-white/35">
+                <div className="inset px-3 py-3">
+                  <div className="mb-2 text-xs uppercase tracking-[0.08em] text-white/35">
                     {t('verify.recentPaths')}
                   </div>
                   <div className="grid max-h-28 gap-1 overflow-auto font-mono text-xs text-white/50">
@@ -1133,23 +1248,23 @@ function App(): React.JSX.Element {
 
           <section className="grid grid-cols-[0.95fr_1.45fr] gap-5">
             <div className="min-w-0 space-y-5">
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+              <div className="panel p-5">
                 <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
                   {t('settings.title')}
                 </h2>
                 <div className="mt-5 grid gap-3">
-                  <label className="grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+                  <label className="grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                     {t('settings.host')}
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                      className="field"
                       value={settings.host}
                       onChange={(event) => setSettings({ ...settings, host: event.target.value })}
                     />
                   </label>
-                  <label className="grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+                  <label className="grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                     {t('settings.port')}
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                      className="field"
                       type="number"
                       value={settings.port}
                       onChange={(event) =>
@@ -1157,20 +1272,20 @@ function App(): React.JSX.Element {
                       }
                     />
                   </label>
-                  <label className="grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+                  <label className="grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                     {t('settings.anthropicUpstream')}
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                      className="field"
                       value={settings.anthropicUpstream}
                       onChange={(event) =>
                         setSettings({ ...settings, anthropicUpstream: event.target.value })
                       }
                     />
                   </label>
-                  <label className="grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+                  <label className="grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                     {t('settings.openAIUpstream')}
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                      className="field"
                       value={settings.openAIUpstream}
                       onChange={(event) =>
                         setSettings({ ...settings, openAIUpstream: event.target.value })
@@ -1178,36 +1293,36 @@ function App(): React.JSX.Element {
                     />
                   </label>
                   <div className="grid gap-3">
-                    <label className="grid gap-1 text-xs uppercase tracking-[0.18em] text-white/40">
+                    <label className="grid gap-1 text-xs uppercase tracking-[0.08em] text-white/40">
                       {t('settings.modelAllowlist')}
                       <input
-                        className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                        className="field"
                         value={modelBasesText}
                         onChange={(event) => setModelBasesText(event.target.value)}
                       />
                     </label>
-                    <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="grid gap-3 inset p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs uppercase tracking-[0.18em] text-white/40">
+                        <span className="text-xs uppercase tracking-[0.08em] text-white/40">
                           {t('settings.knownModels')}
                         </span>
                         <span className="text-xs text-white/35">{t('settings.modelHint')}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="mr-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        <span className="mr-1 text-xs font-semibold uppercase tracking-[0.08em] text-white/35">
                           Claude
                         </span>
                         {modelChips('claude')}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="mr-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                        <span className="mr-1 text-xs font-semibold uppercase tracking-[0.08em] text-white/35">
                           GPT
                         </span>
                         {modelChips('gpt')}
                       </div>
                     </div>
                   </div>
-                  <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white/65">
+                  <label className="flex items-center gap-3 inset px-3 py-3 text-sm text-white/65">
                     <input
                       type="checkbox"
                       checked={settings.autoStart}
@@ -1226,14 +1341,14 @@ function App(): React.JSX.Element {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+              <div className="panel p-5">
                 <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
                   {t('settings.importTitle')}
                 </h2>
                 <p className="mt-2 text-sm text-white/45">{t('settings.importDescription')}</p>
                 <div className="mt-4 flex gap-2">
                   <input
-                    className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/25 px-3 py-2 font-mono text-sm text-paper outline-none focus:border-circuit/70"
+                    className="min-w-0 flex-1 field"
                     value={importPath}
                     onChange={(event) => setImportPath(event.target.value)}
                   />
@@ -1248,21 +1363,21 @@ function App(): React.JSX.Element {
             </div>
 
             <div className="min-w-0 space-y-5">
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+              <div className="panel p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
                     {t('requests.title')}
                   </h2>
                   <button
-                    className="rounded-2xl border border-white/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/55 hover:bg-white/10"
+                    className="btn-ghost px-3 py-2 text-xs uppercase tracking-[0.08em] text-white/55"
                     onClick={refresh}
                   >
                     {t('requests.refresh')}
                   </button>
                 </div>
-                <div className="mt-4 max-h-[360px] overflow-auto rounded-xl border border-white/10">
+                <div className="mt-4 max-h-[360px] overflow-auto rounded-xl border border-line">
                   <table className="w-full text-left text-sm">
-                    <thead className="sticky top-0 z-10 bg-[#11181c] text-xs uppercase tracking-[0.16em] text-white/40">
+                    <thead className="sticky top-0 z-10 bg-surface-raised text-xs uppercase tracking-[0.16em] text-white/40">
                       <tr>
                         <th className="px-3 py-3">#</th>
                         <th className="whitespace-nowrap px-3 py-3">{t('requests.time')}</th>
@@ -1294,7 +1409,7 @@ function App(): React.JSX.Element {
                           className={`transition ${row.imgId != null ? 'cursor-pointer' : ''} ${
                             row.imgId != null && row.imgId === selectedBreakdownId
                               ? 'bg-circuit/10'
-                              : 'hover:bg-white/[0.04]'
+                              : 'hover:bg-surface'
                           }`}
                         >
                           <td className="px-3 py-2.5 font-mono text-xs text-white/30">
@@ -1380,11 +1495,12 @@ function App(): React.JSX.Element {
                 breakdown={breakdown}
                 tokenImage={tokenImage}
                 imageSource={imageSource}
+                galleryImageDataUrls={galleryImageDataUrls}
                 selectedTokenImageId={selectedTokenImageId}
                 onSelectImage={(id) => void loadTokenImage(id)}
               />
 
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-panel backdrop-blur">
+              <div className="panel p-5">
                 <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
                   {t('sessions.title')}
                 </h2>
@@ -1392,7 +1508,7 @@ function App(): React.JSX.Element {
                   {sessions.map((session) => (
                     <div
                       key={session.id}
-                      className="rounded-3xl border border-white/10 bg-black/20 p-4"
+                      className="inset p-4"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div>
@@ -1417,7 +1533,7 @@ function App(): React.JSX.Element {
                     </div>
                   ))}
                   {sessions.length === 0 && (
-                    <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center text-white/35">
+                    <div className="rounded-card border border-dashed border-line p-8 text-center text-white/35">
                       {t('sessions.empty')}
                     </div>
                   )}

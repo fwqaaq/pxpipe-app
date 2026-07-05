@@ -3,6 +3,10 @@ import { en, type Messages } from './en'
 export const zh: Messages = {
   ...en,
   'header.badge': '本地代理控制台',
+  'header.themeDark': '深色',
+  'header.themeLight': '浅色',
+  'header.themeSystem': '自动',
+  'header.theme': '主题',
   'header.description':
     '以跨平台 App 运行 pxpipe：启动节省 token 的代理，将请求遥测持久化到 SQLite，并在不改动原仓库的情况下检查压缩效果。',
 

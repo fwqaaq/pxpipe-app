@@ -26,7 +26,8 @@ const BASE_DEFAULT_SETTINGS: AppSettings = {
   gatewayHeaders: '',
   modelBases: [...DEFAULT_MODEL_BASES],
   autoStart: false,
-  language: 'en'
+  language: 'en',
+  theme: 'system'
 }
 
 type EventInsert = Omit<PersistedEvent, 'id'>
@@ -130,6 +131,9 @@ function cleanSettings(input: Partial<AppSettings>): Partial<AppSettings> {
   }
   if (typeof input.autoStart === 'boolean') out.autoStart = input.autoStart
   if (input.language === 'en' || input.language === 'zh') out.language = input.language
+  if (input.theme === 'dark' || input.theme === 'light' || input.theme === 'system') {
+    out.theme = input.theme
+  }
   return out
 }
 

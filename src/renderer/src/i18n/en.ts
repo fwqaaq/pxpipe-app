@@ -5,6 +5,10 @@ export const en = {
     'Run pxpipe as a cross-platform app: start the token-saving proxy, persist request telemetry to SQLite, and inspect compression impact without touching the original repo.',
   'header.langEn': 'EN',
   'header.langZh': '中文',
+  'header.themeDark': 'Dark',
+  'header.themeLight': 'Light',
+  'header.themeSystem': 'Auto',
+  'header.theme': 'Theme',
 
   'status.running': 'Running',
   'status.stopped': 'Stopped',
