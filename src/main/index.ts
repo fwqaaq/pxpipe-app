@@ -15,12 +15,14 @@ import icon from '../../resources/icon.png?asset'
 import { AppDatabase } from './database'
 import { ProxyService } from './proxy-service'
 import { launchClient } from './launcher'
+import { UpdateService } from './update-service'
 import type { AppSettings, PersistedEvent, ProxyStatus } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let db: AppDatabase
 let proxy: ProxyService
+let updater: UpdateService
 let databaseClosed = false
 let quitAfterProxyStop = false
 let isQuitting = false
@@ -201,6 +203,10 @@ function registerIpc(): void {
     broadcast('pxpipe:status', proxy.getStatus())
     return result
   })
+
+  ipcMain.handle('pxpipe:getUpdateStatus', () => updater.getStatus())
+  ipcMain.handle('pxpipe:checkForUpdates', () => updater.checkForUpdates())
+  ipcMain.handle('pxpipe:installUpdate', () => updater.installUpdate())
 }
 
 async function bootstrap(): Promise<void> {
@@ -220,9 +226,21 @@ async function bootstrap(): Promise<void> {
       updateTray()
     }
   )
+  updater = new UpdateService({
+    broadcast,
+    getLanguage: () => db.getSettings().language,
+    beforeInstall: async () => {
+      isQuitting = true
+      if (proxy.getStatus().running) {
+        await proxy.stop().catch(() => undefined)
+      }
+      closeDatabase()
+    }
+  })
   registerIpc()
   createWindow()
   createTray()
+  updater.init()
 
   const settings = db.getSettings()
   if (settings.autoStart) {

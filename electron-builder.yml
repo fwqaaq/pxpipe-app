@@ -14,7 +14,7 @@ asarUnpack:
   - node_modules/better-sqlite3/**
 win:
   executableName: pxpipe
-  icon: build/icon.ico
+  icon: resources/icon.png
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -22,7 +22,10 @@ nsis:
   createDesktopShortcut: always
 mac:
   category: public.app-category.developer-tools
-  icon: build/icon.icns
+  target:
+    - dmg
+    - zip
+  icon: resources/icon.png
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
@@ -30,17 +33,18 @@ mac:
   notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
-  icon: build/icon.icns
+  icon: resources/icon.png
 linux:
   target:
     - AppImage
     - deb
-  icon: build/icons
+  icon: resources/icon.png
   maintainer: pxpipe
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: true
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: fwqaaq
+  repo: pxpipe-app

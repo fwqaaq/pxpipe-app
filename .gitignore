@@ -3,13 +3,8 @@ node_modules/
 dist/
 # Electron Builder build resources are tracked selectively below.
 build/*
-!build/icon.png
-!build/icon.icns
-!build/icon.ico
 !build/entitlements.mac.plist
 !build/entitlements.mac.inherit.plist
-!build/icons/
-!build/icons/*.png
 *.log
 out/
 # pnpm is the package manager — npm's lockfile is not the source of truth

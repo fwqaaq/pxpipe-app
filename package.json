@@ -1,6 +1,6 @@
 {
   "name": "pxpipe-app",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Cross-platform desktop control panel for pxpipe proxy",
   "main": "./out/main/index.js",
   "author": "pxpipe",
@@ -28,6 +28,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "better-sqlite3": "^12.11.1",
+    "electron-updater": "^6.8.9",
     "pxpipe-proxy": "file:../pxpipe"
   },
   "devDependencies": {

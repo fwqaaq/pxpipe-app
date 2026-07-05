@@ -2,6 +2,31 @@ export type PxpipeProvider = '' | 'cloudflare-ai-gateway'
 export type LaunchKind = 'claude' | 'codex'
 export type AppLanguage = 'en' | 'zh'
 export type AppTheme = 'dark' | 'light' | 'system'
+export type AppUpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'disabled'
+
+export interface AppUpdateStatus {
+  currentVersion: string
+  state: AppUpdateState
+  isSupported: boolean
+  autoCheck: boolean
+  availableVersion?: string
+  releaseName?: string
+  releaseDate?: string
+  percent?: number
+  transferred?: number
+  total?: number
+  bytesPerSecond?: number
+  error?: string
+  lastCheckedAt?: string
+}
 
 export interface AppSettings {
   host: string
@@ -282,6 +307,10 @@ export interface PxpipeDesktopApi {
   launchClaude(cwd?: string): Promise<LaunchResult>
   launchCodex(cwd?: string): Promise<LaunchResult>
   importJsonl(path: string): Promise<ImportResult>
+  getUpdateStatus(): Promise<AppUpdateStatus>
+  checkForUpdates(): Promise<AppUpdateStatus>
+  installUpdate(): Promise<AppUpdateStatus>
   onProxyEvent(callback: (event: PersistedEvent) => void): () => void
   onProxyStatus(callback: (status: ProxyStatus) => void): () => void
+  onUpdateStatus(callback: (status: AppUpdateStatus) => void): () => void
 }

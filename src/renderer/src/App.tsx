@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type {
   AppSettings,
   AppTheme,
+  AppUpdateStatus,
   CurrentSessionPayload,
   DashboardRecentPayload,
   DashboardRecentRow,
@@ -82,6 +83,18 @@ function fmtUsd(value: number | null | undefined): string {
   const abs = Math.abs(value)
   if (abs > 0 && abs < 0.01) return `${sign}$${abs.toFixed(4)}`
   return `${sign}$${abs.toFixed(2)}`
+}
+
+function fmtBytes(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = Math.max(0, value)
+  let unit = 0
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024
+    unit += 1
+  }
+  return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`
 }
 
 function rowImageIds(row: DashboardRecentRow): number[] {
@@ -343,6 +356,99 @@ function PricingPanel({ proxyStats }: { proxyStats: ProxyStatsPayload | null }):
   )
 }
 
+function UpdatePanel({
+  status,
+  onCheck,
+  onInstall
+}: {
+  status: AppUpdateStatus | null
+  onCheck: () => void
+  onInstall: () => void
+}): React.JSX.Element {
+  const { t } = useI18n()
+  const state = status?.state ?? 'idle'
+  const checking = state === 'checking' || state === 'available' || state === 'downloading'
+  const ready = state === 'downloaded'
+  const progress = Math.max(0, Math.min(100, status?.percent ?? 0))
+  const tone =
+    state === 'error'
+      ? 'text-danger'
+      : ready || state === 'available'
+        ? 'text-circuit'
+        : 'text-paper'
+
+  return (
+    <div className="panel p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="font-mono text-[11px] font-black uppercase tracking-[0.12em] text-circuit">
+            {t('updates.eyebrow')}
+          </div>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-[-0.03em]">
+            {t('updates.title')}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-white/45">{t('updates.description')}</p>
+        </div>
+        <div className="shrink-0 rounded-full border border-line px-3 py-1 font-mono text-xs text-white/55">
+          v{status?.currentVersion ?? '—'}
+        </div>
+      </div>
+
+      <div className="mt-4 inset p-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs uppercase tracking-[0.08em] text-white/40">
+            {t('updates.status')}
+          </span>
+          <span className={`font-mono text-xs font-bold ${tone}`}>
+            {t(`updates.state.${state}` as MessageKey)}
+          </span>
+        </div>
+        {status?.availableVersion ? (
+          <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+            <span className="text-white/45">{t('updates.availableVersion')}</span>
+            <span className="font-mono text-paper">v{status.availableVersion}</span>
+          </div>
+        ) : null}
+        {state === 'downloading' ? (
+          <div className="mt-3">
+            <div className="h-2 overflow-hidden rounded-full bg-surface">
+              <div
+                className="h-full rounded-full bg-circuit transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between gap-3 font-mono text-[11px] text-white/45">
+              <span>{progress.toFixed(0)}%</span>
+              <span>
+                {fmtBytes(status?.transferred)} / {fmtBytes(status?.total)}
+              </span>
+            </div>
+          </div>
+        ) : null}
+        {status?.error ? (
+          <p className="mt-3 break-words text-xs leading-5 text-danger">{status.error}</p>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-ghost px-4 py-2 text-xs"
+          disabled={checking || status?.isSupported === false}
+          onClick={onCheck}
+        >
+          {checking ? t('updates.checking') : t('updates.check')}
+        </button>
+        {ready ? (
+          <button type="button" className="btn-primary px-4 py-2 text-xs" onClick={onInstall}>
+            {t('updates.install')}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function ImageVsTextPanel({
   breakdown,
   tokenImage,
@@ -589,6 +695,7 @@ function App(): React.JSX.Element {
   const [galleryImageDataUrls, setGalleryImageDataUrls] = useState<Record<number, string>>({})
   const [proxyStats, setProxyStats] = useState<ProxyStatsPayload | null>(null)
   const [currentSession, setCurrentSession] = useState<CurrentSessionPayload | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<AppUpdateStatus | null>(null)
 
   const proxyUrl = status?.url ?? 'http://127.0.0.1:47821'
   const lang: Lang = settings?.language ?? 'en'
@@ -705,7 +812,8 @@ function App(): React.JSX.Element {
       nextSessions,
       nextVerification,
       nextProxyStats,
-      nextCurrentSession
+      nextCurrentSession,
+      nextUpdateStatus
     ] = await Promise.all([
       window.pxpipe.getSettings(),
       window.pxpipe.getProxyStatus(),
@@ -714,7 +822,8 @@ function App(): React.JSX.Element {
       window.pxpipe.listSessions(20),
       window.pxpipe.getProxyVerification(),
       window.pxpipe.getProxyStats(),
-      window.pxpipe.getCurrentSession()
+      window.pxpipe.getCurrentSession(),
+      window.pxpipe.getUpdateStatus()
     ])
     setSettings(nextSettings)
     setModelBasesText(nextSettings.modelBases.join(', '))
@@ -725,6 +834,7 @@ function App(): React.JSX.Element {
     setVerification(nextVerification)
     setProxyStats(nextProxyStats)
     setCurrentSession(nextCurrentSession)
+    setUpdateStatus(nextUpdateStatus)
     await refreshInspector()
   }
 
@@ -742,10 +852,12 @@ function App(): React.JSX.Element {
       void refreshInspector()
     })
     const offStatus = window.pxpipe.onProxyStatus(setStatus)
+    const offUpdateStatus = window.pxpipe.onUpdateStatus(setUpdateStatus)
     return () => {
       window.clearTimeout(refreshTimer)
       offEvent()
       offStatus()
+      offUpdateStatus()
     }
   }, [])
 
@@ -931,6 +1043,16 @@ function App(): React.JSX.Element {
     } catch (error) {
       setMessage({ raw: error instanceof Error ? error.message : String(error) })
     }
+  }
+
+  async function checkForUpdates(): Promise<void> {
+    const next = await window.pxpipe.checkForUpdates()
+    setUpdateStatus(next)
+  }
+
+  async function installUpdate(): Promise<void> {
+    const next = await window.pxpipe.installUpdate()
+    setUpdateStatus(next)
   }
 
   if (!settings || !status) {
@@ -1340,6 +1462,12 @@ function App(): React.JSX.Element {
                   </button>
                 </div>
               </div>
+
+              <UpdatePanel
+                status={updateStatus}
+                onCheck={() => void checkForUpdates()}
+                onInstall={() => void installUpdate()}
+              />
 
               <div className="panel p-5">
                 <h2 className="font-display text-2xl font-bold tracking-[-0.03em]">
