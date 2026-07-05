@@ -24,9 +24,11 @@ jobs:
           - name: Windows
             os: windows-latest
             build_script: build:win
+
           - name: macOS
             os: macos-latest
             build_script: build:mac
+
           - name: Linux
             os: ubuntu-latest
             build_script: build:linux
@@ -88,23 +90,33 @@ jobs:
             echo "Missing CSC_LINK or CSC_KEY_PASSWORD for Developer ID signing." >&2
             exit 1
           fi
+
           if [[ -n "$APPLE_API_KEY" && -n "$APPLE_API_KEY_ID" && -n "$APPLE_API_ISSUER" ]]; then
             exit 0
           fi
+
           if [[ -n "$APPLE_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" && -n "$APPLE_TEAM_ID" ]]; then
             exit 0
           fi
+
           echo "Missing notarization credentials. Provide APPLE_API_KEY/APPLE_API_KEY_ID/APPLE_API_ISSUER or APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID." >&2
           exit 1
 
-      - name: Build
+      - name: Build package
         working-directory: pxpipe-app
         env:
+          # Important:
+          # Do not let electron-builder publish during build.
+          # We upload all assets in the release job below.
+          ELECTRON_BUILDER_PUBLISH: never
+
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -120,6 +132,7 @@ jobs:
             pxpipe-app/dist/*.exe
             pxpipe-app/dist/*.AppImage
             pxpipe-app/dist/*.deb
+            pxpipe-app/dist/*.rpm
             pxpipe-app/dist/*.blockmap
             pxpipe-app/dist/latest*.yml
           if-no-files-found: error
@@ -146,7 +159,11 @@ jobs:
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           files: release-assets/*
           fail_on_unmatched_files: true
           overwrite_files: true
