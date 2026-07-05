@@ -18,10 +18,10 @@
     "dev": "electron-vite dev",
     "build": "pnpm run typecheck && electron-vite build",
     "postinstall": "pnpm run rebuild:native",
-    "build:unpack": "pnpm run build && electron-builder --dir",
-    "build:win": "pnpm run build && electron-builder --win",
-    "build:mac": "pnpm run build && electron-builder --mac",
-    "build:linux": "pnpm run build && electron-builder --linux",
+    "build:unpack": "pnpm run build && electron-builder --dir --publish never",
+    "build:win": "pnpm run build && electron-builder --win --publish never",
+    "build:mac": "pnpm run build && electron-builder --mac --publish never",
+    "build:linux": "pnpm run build && electron-builder --linux --publish never",
     "prebuild": "pnpm run rebuild:native"
   },
   "dependencies": {
