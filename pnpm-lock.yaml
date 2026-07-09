@@ -20,6 +20,9 @@ importers:
       electron-updater:
         specifier: ^6.8.9
         version: 6.8.9
+      menubar:
+        specifier: ^9.5.2
+        version: 9.5.2(electron@39.8.10)
       pxpipe-proxy:
         specifier: file:../pxpipe
         version: file:../pxpipe
@@ -1431,6 +1434,9 @@ packages:
     engines: {node: '>=14.0.0'}
     hasBin: true
 
+  electron-positioner@4.1.0:
+    resolution: {integrity: sha512-726DfbI9ZNoCg+Fcu6XLuTKTnzf+6nFqv7h+K/V6Ug7IbaPMI7s9S8URnGtWFCy5N5PL4HSzRFF2mXuinftDdg==}
+
   electron-publish@26.15.3:
     resolution: {integrity: sha512-g/2bn8YTavY4cuS5F+jOS7zmZbXXBV8KZ8yHKfJjFPoKtzBqrpCdNPxBd3tqdBwP7BVd0lGzf7Bk2s0KesWZ4Q==}
 
@@ -2163,6 +2169,11 @@ packages:
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
+
+  menubar@9.5.2:
+    resolution: {integrity: sha512-yUn4jCMPOiNuqxplEE+SITlTX+Wy92ZNZaG5tsTczEvVT1El8plHR3kinOTfUPwfQcAYcWE0SLiBM41z/hS6pg==}
+    peerDependencies:
+      electron: '>=9.0.0 <35.0.0'
 
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
@@ -4493,6 +4504,8 @@ snapshots:
       - electron-builder-squirrel-windows
       - supports-color
 
+  electron-positioner@4.1.0: {}
+
   electron-publish@26.15.3:
     dependencies:
       '@types/fs-extra': 9.0.13
@@ -5425,6 +5438,11 @@ snapshots:
     optional: true
 
   math-intrinsics@1.1.0: {}
+
+  menubar@9.5.2(electron@39.8.10):
+    dependencies:
+      electron: 39.8.10
+      electron-positioner: 4.1.0
 
   merge2@1.4.1: {}
 

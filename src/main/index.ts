@@ -7,11 +7,17 @@ import {
   nativeTheme,
   Tray,
   Menu,
-  nativeImage
+  nativeImage,
+  type NativeImage
 } from 'electron'
 import { join } from 'node:path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { menubar, type Menubar } from 'menubar'
 import icon from '../../resources/icon.png?asset'
+import ringIcon from '../../resources/tray/ringTemplate.png?asset'
+import ringIcon2x from '../../resources/tray/ringTemplate@2x.png?asset'
+import ringDotIcon from '../../resources/tray/ringDotTemplate.png?asset'
+import ringDotIcon2x from '../../resources/tray/ringDotTemplate@2x.png?asset'
 import { AppDatabase } from './database'
 import { ProxyService } from './proxy-service'
 import { launchClient } from './launcher'
@@ -20,12 +26,26 @@ import type { AppSettings, PersistedEvent, ProxyStatus } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let mb: Menubar | null = null
+let trayMenu: Menu | null = null
+let trayIconRunning: NativeImage | null = null
+let trayIconStopped: NativeImage | null = null
 let db: AppDatabase
 let proxy: ProxyService
 let updater: UpdateService
 let databaseClosed = false
 let quitAfterProxyStop = false
 let isQuitting = false
+
+function trayImage(basePath: string, retinaPath: string): NativeImage {
+  const img = nativeImage.createFromPath(basePath)
+  img.addRepresentation({
+    scaleFactor: 2,
+    dataURL: nativeImage.createFromPath(retinaPath).toDataURL()
+  })
+  img.setTemplateImage(true)
+  return img
+}
 
 function broadcast(channel: string, payload: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -52,48 +72,76 @@ function showMainWindow(): void {
 function updateTray(): void {
   if (!tray) return
   const status = proxy.getStatus()
-  tray.setToolTip(status.running ? `pxpipe — running on ${status.url}` : 'pxpipe — stopped')
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: status.running ? `Running on ${status.url}` : 'Proxy stopped',
-        enabled: false
-      },
-      { type: 'separator' },
-      status.running
-        ? {
-            label: 'Stop proxy',
-            click: (): void => {
-              void proxy.stop().catch(() => undefined)
-            }
+  tray.setImage(status.running ? trayIconRunning! : trayIconStopped!)
+  tray.setToolTip(status.running ? `pxpipe — ${status.url}` : 'pxpipe — stopped')
+  trayMenu = Menu.buildFromTemplate([
+    {
+      label: status.running ? `Running on ${status.url}` : 'Proxy stopped',
+      enabled: false
+    },
+    { type: 'separator' },
+    status.running
+      ? {
+          label: 'Stop proxy',
+          click: (): void => {
+            void proxy.stop().catch(() => undefined)
           }
-        : {
-            label: 'Start proxy',
-            click: (): void => {
-              void proxy.start(db.getSettings()).catch((error: unknown) => {
-                broadcast('pxpipe:status', {
-                  ...proxy.getStatus(),
-                  running: false,
-                  error: error instanceof Error ? error.message : String(error)
-                } satisfies ProxyStatus)
-              })
-            }
-          },
-      { type: 'separator' },
-      { label: 'Show pxpipe', click: showMainWindow },
-      { label: 'Quit pxpipe', role: 'quit' }
-    ])
-  )
+        }
+      : {
+          label: 'Start proxy',
+          click: (): void => {
+            void proxy.start(db.getSettings()).catch((error: unknown) => {
+              broadcast('pxpipe:status', {
+                ...proxy.getStatus(),
+                running: false,
+                error: error instanceof Error ? error.message : String(error)
+              } satisfies ProxyStatus)
+            })
+          }
+        },
+    { type: 'separator' },
+    { label: 'Show pxpipe', click: showMainWindow },
+    { label: 'Quit pxpipe', role: 'quit' }
+  ])
 }
 
 function createTray(): void {
   if (process.platform !== 'darwin' || tray) return
-  const image = nativeImage.createFromPath(icon).resize({ width: 18, height: 18 })
-  tray = new Tray(image)
-  tray.on('click', () => {
-    // Keep default context-menu behavior on macOS; clicking opens the menu.
+  trayIconRunning = trayImage(ringDotIcon, ringDotIcon2x)
+  trayIconStopped = trayImage(ringIcon, ringIcon2x)
+  tray = new Tray(trayIconStopped)
+  tray.on('right-click', () => {
+    if (trayMenu) tray?.popUpContextMenu(trayMenu)
   })
   updateTray()
+
+  const popoverIndex =
+    is.dev && process.env['ELECTRON_RENDERER_URL']
+      ? `${process.env['ELECTRON_RENDERER_URL']}#/popover`
+      : `file://${join(__dirname, '../renderer/index.html')}#/popover`
+
+  mb = menubar({
+    tray,
+    index: popoverIndex,
+    showDockIcon: true,
+    showOnRightClick: false,
+    preloadWindow: true,
+    browserWindow: {
+      width: 360,
+      height: 440,
+      resizable: false,
+      movable: false,
+      fullscreenable: false,
+      backgroundColor: '#171717',
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false
+      }
+    }
+  })
+  mb.on('show', () => {
+    mb?.window?.webContents.send('pxpipe:popoverShow')
+  })
 }
 
 function createWindow(): void {
@@ -210,6 +258,7 @@ function registerIpc(): void {
 
   ipcMain.handle('pxpipe:getPopoverStats', () => db.getPopoverStats())
   ipcMain.handle('pxpipe:showMainWindow', () => {
+    mb?.hideWindow()
     showMainWindow()
   })
   ipcMain.handle('pxpipe:quitApp', () => {
