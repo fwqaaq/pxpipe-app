@@ -30,6 +30,10 @@ http://127.0.0.1:47821
 
 Claude Code, Codex, or other compatible API clients need to point their requests at that proxy explicitly. When a request arrives, the proxy decides whether the model, path, and input are a good fit for compression. Only eligible input blocks are rendered as PNG images; the rest stays as plain text.
 
+The proxy now forwards any unrecognized API path directly to the upstream
+provider (pass-through routing), so non-chat endpoints keep working when a
+client is pointed at pxpipe.
+
 Common content that gets compressed:
 
 - large tool output;
@@ -59,6 +63,9 @@ The main pxpipe project uses conservative defaults for model support. The defaul
 Even if a model is on the allowlist, pxpipe will not always generate PNGs. It also checks block size, text density, and image-token cost. When image compression is actually cheaper, the request will show `image ×N` or `图片 ×N`.
 
 If you selected `gpt-5.5` but Recent requests still shows `text`, that is usually the main project's conservative policy or the compression gate at work — not an app bug.
+
+> Note: savings statistics on the GPT (Responses) path exclude image base64
+> payloads from outgoing text accounting, so displayed savings are accurate.
 
 ## Why ChatGPT does not use image compression
 
