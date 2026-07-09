@@ -51,6 +51,16 @@ const pxpipe: PxpipeDesktopApi = {
       callback(payload)
     ipcRenderer.on('pxpipe:updateStatus', listener)
     return () => ipcRenderer.off('pxpipe:updateStatus', listener)
+  },
+  getPopoverStats: () => ipcRenderer.invoke('pxpipe:getPopoverStats'),
+  showMainWindow: () => ipcRenderer.invoke('pxpipe:showMainWindow'),
+  quitApp: () => ipcRenderer.invoke('pxpipe:quitApp'),
+  onPopoverShow: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('pxpipe:popoverShow', listener)
+    return () => {
+      ipcRenderer.removeListener('pxpipe:popoverShow', listener)
+    }
   }
 }
 

@@ -9,11 +9,13 @@ import type {
   ImportResult,
   PathCount,
   PersistedEvent,
+  PopoverStatsPayload,
   ProxyVerification,
   SessionSummary,
   StatsPayload
 } from '../shared/types'
 import { DEFAULT_MODEL_BASES } from '../shared/model-catalog'
+import { computePopoverStats, type PopoverEventRow } from './popover-stats'
 
 const BASE_DEFAULT_SETTINGS: AppSettings = {
   host: '127.0.0.1',
@@ -342,6 +344,21 @@ export class AppDatabase {
         baselineTokensTotal === 0 ? 0 : (estimatedSavedTokensTotal / baselineTokensTotal) * 100,
       avgDurationMs: Math.round(row.avgDurationMs ?? 0)
     }
+  }
+
+  getPopoverStats(now: Date = new Date()): PopoverStatsPayload {
+    const since = new Date(now.getTime() - 24 * 3_600_000).toISOString()
+    const rows = this.db
+      .prepare(
+        `SELECT ts,
+                estimated_saved_tokens AS estimatedSavedTokens,
+                baseline_tokens AS baselineTokens
+         FROM events
+         WHERE ts >= ?
+         ORDER BY ts ASC`
+      )
+      .all(since) as PopoverEventRow[]
+    return computePopoverStats(rows, now)
   }
 
   listSessions(limit = 50): SessionSummary[] {

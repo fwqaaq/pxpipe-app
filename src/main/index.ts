@@ -207,6 +207,14 @@ function registerIpc(): void {
   ipcMain.handle('pxpipe:getUpdateStatus', () => updater.getStatus())
   ipcMain.handle('pxpipe:checkForUpdates', () => updater.checkForUpdates())
   ipcMain.handle('pxpipe:installUpdate', () => updater.installUpdate())
+
+  ipcMain.handle('pxpipe:getPopoverStats', () => db.getPopoverStats())
+  ipcMain.handle('pxpipe:showMainWindow', () => {
+    showMainWindow()
+  })
+  ipcMain.handle('pxpipe:quitApp', () => {
+    app.quit()
+  })
 }
 
 async function bootstrap(): Promise<void> {

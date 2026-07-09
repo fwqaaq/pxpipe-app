@@ -326,4 +326,8 @@ export interface PxpipeDesktopApi {
   onProxyEvent(callback: (event: PersistedEvent) => void): () => void
   onProxyStatus(callback: (status: ProxyStatus) => void): () => void
   onUpdateStatus(callback: (status: AppUpdateStatus) => void): () => void
+  getPopoverStats(): Promise<PopoverStatsPayload>
+  showMainWindow(): Promise<void>
+  quitApp(): Promise<void>
+  onPopoverShow(callback: () => void): () => void
 }
