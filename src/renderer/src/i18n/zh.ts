@@ -20,6 +20,16 @@ export const zh: Messages = {
   'status.compressionUnavailable': '不可用',
   'status.compressionSwitch': '切换压缩',
 
+  'popover.todaySaved': '今日节省',
+  'popover.savedPct': '节省比例',
+  'popover.savedCost': '估算省费',
+  'popover.requests': '今日请求',
+  'popover.trend': '最近 24 小时',
+  'popover.trendRequests': '请求数',
+  'popover.trendSaved': '节省 tokens',
+  'popover.openMain': '打开主窗口',
+  'popover.quit': '退出',
+
   'launch.title': '通过 pxpipe 启动',
   'launch.description':
     '已经启动的 Codex 或 Claude 会话无法中途接入。请从这里启动新会话，或复制精确的环境变量命令。',

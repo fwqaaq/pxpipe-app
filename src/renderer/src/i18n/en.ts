@@ -20,6 +20,16 @@ export const en = {
   'status.compressionUnavailable': 'Unavailable',
   'status.compressionSwitch': 'Toggle compression',
 
+  'popover.todaySaved': 'Saved today',
+  'popover.savedPct': 'Saved %',
+  'popover.savedCost': 'Est. saved',
+  'popover.requests': 'Requests today',
+  'popover.trend': 'Last 24 hours',
+  'popover.trendRequests': 'Requests',
+  'popover.trendSaved': 'Saved tokens',
+  'popover.openMain': 'Open pxpipe',
+  'popover.quit': 'Quit',
+
   'launch.title': 'Launch through pxpipe',
   'launch.description':
     'Existing Codex or Claude sessions cannot be captured after they already started. Launch a new session from here, or copy the exact env command.',
