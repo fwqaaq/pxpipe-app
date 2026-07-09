@@ -202,6 +202,19 @@ export interface CurrentSessionPayload {
   rawOutputTokens?: number
 }
 
+export interface PopoverStatsPayload {
+  today: {
+    requests: number
+    savedTokens: number
+    savedPct: number
+  }
+  series: Array<{
+    hourStart: number
+    requests: number
+    savedTokens: number
+  }>
+}
+
 export interface CompressionToggleResult {
   compression_enabled: boolean
 }
