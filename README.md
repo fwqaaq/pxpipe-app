@@ -19,6 +19,7 @@ pxpipe's core idea is to render large chunks of input context into compact PNG i
 - **Model allowlist**: control which models are allowed to use image compression.
 - **Legacy import**: import `~/.pxpipe/events.jsonl` into the app's SQLite database.
 - **English / 中文 switch**: the UI supports both languages and persists your preference.
+- **Menu bar monitor (macOS)** — a circular menu-bar icon opens a popover with proxy status, start/stop and compression toggles, today's savings, and a 24 h trend; right-click for the quick menu.
 
 ## How it works
 
